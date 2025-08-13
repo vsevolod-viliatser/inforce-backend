@@ -1,6 +1,7 @@
 import bodyParser from "body-parser";
 import cors from "cors";
 import express from "express";
+import "./config/initDatabase"; // Initialize database on startup
 import commentRoutes from "./routes/commentRoutes";
 import productRoutes from "./routes/productRoutes";
 
@@ -35,22 +36,12 @@ app.get("/health", (req, res) => {
 app.get("/db-test", async (req, res) => {
   try {
     const db = await import("./config/database");
-    if (db.isProduction) {
-      // Test PostgreSQL connection
-      const result = await db.default.query("SELECT NOW() as current_time");
-      res.json({
-        status: "OK",
-        database: "PostgreSQL",
-        current_time: result.rows[0].current_time,
-      });
-    } else {
-      // Test SQLite connection
-      res.json({
-        status: "OK",
-        database: "SQLite",
-        message: "SQLite connection established",
-      });
-    }
+    res.json({
+      status: "OK",
+      database: "SQLite",
+      message: "SQLite connection established",
+      environment: NODE_ENV,
+    });
   } catch (error) {
     console.error("Database test error:", error);
     res.status(500).json({

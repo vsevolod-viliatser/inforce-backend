@@ -1,56 +1,26 @@
 import * as path from "path";
-import { Pool } from "pg";
 import * as sqlite3 from "sqlite3";
 
-// Check if we're in production (Render) or development
+// For now, use SQLite in both development and production to avoid database setup issues
 const isProduction = process.env.NODE_ENV === "production";
 
-let db: any;
+let db: sqlite3.Database;
 
-if (isProduction) {
-  // PostgreSQL for production (Render)
-  if (!process.env.DATABASE_URL) {
-    console.error(
-      "DATABASE_URL environment variable is not set for production"
-    );
-    process.exit(1);
+// Use SQLite for both development and production
+const dbPath = isProduction
+  ? path.join(process.cwd(), "database", "products.db")
+  : path.join(process.cwd(), "database", "products.db");
+
+db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error("Error opening SQLite database:", err.message);
+  } else {
+    console.log(`Connected to SQLite database at: ${dbPath}`);
   }
+});
 
-  db = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  // Test the connection
-  db.query("SELECT NOW()", (err: any, res: any) => {
-    if (err) {
-      console.error("Error connecting to PostgreSQL:", err.message);
-    } else {
-      console.log("Connected to PostgreSQL database");
-    }
-  });
-
-  // Handle connection errors
-  db.on("error", (err: any) => {
-    console.error("Unexpected error on idle client", err);
-    process.exit(-1);
-  });
-} else {
-  // SQLite for local development
-  const dbPath = path.join(process.cwd(), "database/products.db");
-  db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-      console.error("Error opening SQLite database:", err.message);
-    } else {
-      console.log("Connected to SQLite database");
-    }
-  });
-
-  // Enable foreign keys for SQLite
-  db.run("PRAGMA foreign_keys = ON");
-}
+// Enable foreign keys for SQLite
+db.run("PRAGMA foreign_keys = ON");
 
 export default db;
 export { isProduction };

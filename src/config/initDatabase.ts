@@ -1,89 +1,123 @@
 import db, { isProduction } from "./database";
 
-const initPostgreSQL = async () => {
-  try {
+const initSQLite = () => {
+  return new Promise<void>((resolve, reject) => {
     // Create products table
-    await db.query(`
+    db.run(
+      `
       CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
         imageUrl TEXT NOT NULL,
         count INTEGER NOT NULL DEFAULT 0,
-        size_width INTEGER NOT NULL,
-        size_height INTEGER NOT NULL,
-        weight VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        width INTEGER NOT NULL,
+        height INTEGER NOT NULL,
+        weight TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
-    `);
+    `,
+      (err) => {
+        if (err) {
+          console.error("Error creating products table:", err);
+          reject(err);
+          return;
+        }
+        console.log("Products table created/verified successfully");
+      }
+    );
 
     // Create comments table
-    await db.query(`
+    db.run(
+      `
       CREATE TABLE IF NOT EXISTS comments (
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         productId INTEGER NOT NULL,
         description TEXT NOT NULL,
-        date VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        date TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
       )
-    `);
+    `,
+      (err) => {
+        if (err) {
+          console.error("Error creating comments table:", err);
+          reject(err);
+          return;
+        }
+        console.log("Comments table created/verified successfully");
+      }
+    );
 
     // Insert sample data if tables are empty
-    const productsResult = await db.query("SELECT COUNT(*) FROM products");
-    if (parseInt(productsResult.rows[0].count) === 0) {
-      await db.query(`
-        INSERT INTO products (name, imageUrl, count, size_width, size_height, weight) VALUES
-        ('Sample Product 1', 'https://via.placeholder.com/200x200', 10, 200, 200, '200g'),
-        ('Sample Product 2', 'https://via.placeholder.com/300x300', 5, 300, 300, '300g')
-      `);
+    db.get("SELECT COUNT(*) as count FROM products", (err, row: any) => {
+      if (err) {
+        console.error("Error checking products count:", err);
+        reject(err);
+        return;
+      }
 
-      await db.query(`
-        INSERT INTO comments (productId, description, date) VALUES
-        (1, 'Great product!', '14:00 22.08.2021'),
-        (2, 'Excellent service', '16:00 22.08.2021'),
-        (1, 'Very satisfied with the quality', '15:30 22.08.2021')
-      `);
+      if (row.count === 0) {
+        console.log("Inserting sample data...");
 
-      console.log("Sample data inserted successfully");
+        // Insert sample products
+        db.run(
+          `
+          INSERT INTO products (name, imageUrl, count, width, height, weight) VALUES
+          ('Sample Product 1', 'https://via.placeholder.com/200x200', 10, 200, 200, '200g'),
+          ('Sample Product 2', 'https://via.placeholder.com/300x300', 5, 300, 300, '300g')
+        `,
+          (err) => {
+            if (err) {
+              console.error("Error inserting sample products:", err);
+            } else {
+              console.log("Sample products inserted successfully");
+            }
+          }
+        );
+
+        // Insert sample comments
+        db.run(
+          `
+          INSERT INTO comments (productId, description, date) VALUES
+          (1, 'Great product!', '14:00 22.08.2021'),
+          (2, 'Excellent service', '16:00 22.08.2021'),
+          (1, 'Very satisfied with the quality', '15:30 22.08.2021')
+        `,
+          (err) => {
+            if (err) {
+              console.error("Error inserting sample comments:", err);
+            } else {
+              console.log("Sample comments inserted successfully");
+            }
+          }
+        );
+      } else {
+        console.log(`Database already contains ${row.count} products`);
+      }
+
+      resolve();
+    });
+  });
+};
+
+// Initialize database based on environment
+const initDatabase = async () => {
+  try {
+    if (isProduction) {
+      console.log("Initializing SQLite database for production...");
+    } else {
+      console.log("Initializing SQLite database for development...");
     }
 
-    console.log("PostgreSQL database initialized successfully");
+    await initSQLite();
+    console.log("Database initialization completed successfully");
   } catch (error) {
-    console.error("Error initializing PostgreSQL database:", error);
+    console.error("Database initialization failed:", error);
+    throw error;
   }
 };
 
-const initSQLite = () => {
-  // SQLite initialization (existing code)
-  db.run(`
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      imageUrl TEXT NOT NULL,
-      count INTEGER NOT NULL DEFAULT 0,
-      size_width INTEGER NOT NULL,
-      size_height INTEGER NOT NULL,
-      weight TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+// Auto-initialize when this module is imported
+initDatabase().catch(console.error);
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS comments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      productId INTEGER NOT NULL,
-      description TEXT NOT NULL,
-      date TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
-    )
-  `);
-
-  console.log("SQLite database initialized successfully");
-};
-
-if (isProduction) {
-  initPostgreSQL();
-} else {
-  initSQLite();
-}
+export default initDatabase;
