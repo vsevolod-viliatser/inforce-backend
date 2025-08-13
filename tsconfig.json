@@ -16,7 +16,9 @@
     "noImplicitReturns": false,
     "noImplicitThis": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "types": ["node"],
+    "lib": ["ES2020"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
