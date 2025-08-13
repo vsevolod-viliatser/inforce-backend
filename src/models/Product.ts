@@ -51,10 +51,8 @@ export class ProductModel {
               imageUrl: row.imageUrl,
               name: row.name,
               count: row.count,
-              size: {
-                width: row.width,
-                height: row.height,
-              },
+              width: row.width,
+              height: row.height,
               weight: row.weight,
               comments: [],
             });
@@ -113,10 +111,8 @@ export class ProductModel {
           imageUrl: rows[0].imageUrl,
           name: rows[0].name,
           count: rows[0].count,
-          size: {
-            width: rows[0].width,
-            height: rows[0].height,
-          },
+          width: rows[0].width,
+          height: rows[0].height,
           weight: rows[0].weight,
           comments: [],
         };
@@ -166,10 +162,8 @@ export class ProductModel {
             imageUrl: productData.imageUrl,
             name: productData.name,
             count: productData.count,
-            size: {
-              width: productData.width,
-              height: productData.height,
-            },
+            width: productData.width,
+            height: productData.height,
             weight: productData.weight,
             comments: [],
           };
