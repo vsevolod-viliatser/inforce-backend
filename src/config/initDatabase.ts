@@ -48,15 +48,29 @@ const initSQLite = () => {
       }
     );
 
-    // Insert sample data if tables are empty
-    db.get("SELECT COUNT(*) as count FROM products", (err, row: any) => {
-      if (err) {
-        console.error("Error checking products count:", err);
-        reject(err);
-        return;
+    // For production (in-memory database), always insert sample data since it will be lost on restart
+    // For development, only insert if tables are empty
+    const shouldInsertSampleData = () => {
+      if (isProduction) {
+        return true; // Always insert for in-memory database
       }
 
-      if (row.count === 0) {
+      return new Promise<boolean>((resolve) => {
+        db.get("SELECT COUNT(*) as count FROM products", (err, row: any) => {
+          if (err) {
+            console.error("Error checking products count:", err);
+            resolve(false);
+            return;
+          }
+          resolve(row.count === 0);
+        });
+      });
+    };
+
+    const insertSampleData = async () => {
+      const shouldInsert = await shouldInsertSampleData();
+
+      if (shouldInsert) {
         console.log("Inserting sample data...");
 
         // Insert sample products
@@ -92,11 +106,17 @@ const initSQLite = () => {
           }
         );
       } else {
-        console.log(`Database already contains ${row.count} products`);
+        console.log(
+          "Database already contains data, skipping sample data insertion"
+        );
       }
+    };
 
+    // Wait for table creation to complete, then insert sample data
+    setTimeout(async () => {
+      await insertSampleData();
       resolve();
-    });
+    }, 100);
   });
 };
 
@@ -104,9 +124,9 @@ const initSQLite = () => {
 const initDatabase = async () => {
   try {
     if (isProduction) {
-      console.log("Initializing SQLite database for production...");
+      console.log("Initializing SQLite in-memory database for production...");
     } else {
-      console.log("Initializing SQLite database for development...");
+      console.log("Initializing SQLite file-based database for development...");
     }
 
     await initSQLite();

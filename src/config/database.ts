@@ -5,28 +5,39 @@ import * as sqlite3 from "sqlite3";
 // For now, use SQLite in both development and production to avoid database setup issues
 const isProduction = process.env.NODE_ENV === "production";
 
-// Ensure database directory exists
-const dbDir = path.join(process.cwd(), "database");
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-  console.log(`Created database directory: ${dbDir}`);
-}
-
-const dbPath = path.join(dbDir, "products.db");
-console.log(`Database path: ${dbPath}`);
-
 let db: sqlite3.Database;
 
-// Use SQLite for both development and production
-db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error("Error opening SQLite database:", err.message);
-    console.error("Database path:", dbPath);
-    console.error("Current working directory:", process.cwd());
-  } else {
-    console.log(`Connected to SQLite database at: ${dbPath}`);
+if (isProduction) {
+  // Use in-memory database for production (cloud platforms)
+  console.log("Using in-memory SQLite database for production");
+  db = new sqlite3.Database(":memory:", (err) => {
+    if (err) {
+      console.error("Error opening in-memory SQLite database:", err.message);
+    } else {
+      console.log("Connected to in-memory SQLite database");
+    }
+  });
+} else {
+  // Use file-based database for development
+  const dbDir = path.join(process.cwd(), "database");
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log(`Created database directory: ${dbDir}`);
   }
-});
+
+  const dbPath = path.join(dbDir, "products.db");
+  console.log(`Database path: ${dbPath}`);
+
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error("Error opening SQLite database:", err.message);
+      console.error("Database path:", dbPath);
+      console.error("Current working directory:", process.cwd());
+    } else {
+      console.log(`Connected to SQLite database at: ${dbPath}`);
+    }
+  });
+}
 
 // Enable foreign keys for SQLite
 db.run("PRAGMA foreign_keys = ON");
