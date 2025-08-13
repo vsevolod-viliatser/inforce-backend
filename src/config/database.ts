@@ -9,6 +9,13 @@ let db: any;
 
 if (isProduction) {
   // PostgreSQL for production (Render)
+  if (!process.env.DATABASE_URL) {
+    console.error(
+      "DATABASE_URL environment variable is not set for production"
+    );
+    process.exit(1);
+  }
+
   db = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -24,9 +31,15 @@ if (isProduction) {
       console.log("Connected to PostgreSQL database");
     }
   });
+
+  // Handle connection errors
+  db.on("error", (err: any) => {
+    console.error("Unexpected error on idle client", err);
+    process.exit(-1);
+  });
 } else {
   // SQLite for local development
-  const dbPath = path.join(__dirname, "../../database/products.db");
+  const dbPath = path.join(process.cwd(), "database/products.db");
   db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
       console.error("Error opening SQLite database:", err.message);
