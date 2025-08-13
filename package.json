@@ -7,8 +7,17 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "postbuild": "echo 'Build completed successfully!'",
     "init-db": "ts-node src/config/initDatabase.ts",
     "init-db-js": "node init-db.js",
+    "test-api": "curl http://localhost:3002/health",
+    "test-db": "curl http://localhost:3002/db-test",
+    "test-products": "curl http://localhost:3002/api/products",
+    "dev:full": "npm run init-db-js && npm run dev",
+    "start:prod": "npm run build && npm start",
     "postinstall": "npm run build"
   },
   "dependencies": {
